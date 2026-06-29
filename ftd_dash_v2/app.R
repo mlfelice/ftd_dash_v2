@@ -1,0 +1,560 @@
+#
+# This is a Shiny web application. You can run the application by clicking
+# the 'Run App' button above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    https://shiny.posit.co/
+#
+
+
+# TODO: Add TPA by size class and sp (maybe have dropdown to select split by year vs size class?)
+# TODO: Add check boxes for selecting size classes
+
+# Overstory summary plot
+## 'overstory_summary'
+## input$year
+# Understory summary plot
+## 'understory_summary'
+## input$year
+# Year menu overview
+##
+##
+# Overstory diversity overview
+##
+##
+# Understory diversity overview
+##
+##
+# Overstory richness overview
+##
+##
+# Understory richness overview
+##
+##
+# Plot-level overstory overview
+## 'overstory_plot'
+## input$plot
+# Plot-level understory overview
+## 'understory_plot
+## input$plot
+# Qualitative site notes
+## 'site_summary_table'
+## input$site_year (dynamically updated based on site)
+## input$plot
+##
+
+
+# Packages ----------------------------------------------------------------
+
+library(dplyr)
+#library(tidyr)
+#library(stringr)
+library(ggplot2)
+library(plotly)
+
+auto_size_plt <- function(df, px, min = 400){
+  nrow(df) * px + min
+}
+
+# Data import -------------------------------------------------------------
+
+
+load('data/ftd_dash_data.RData')
+
+
+# NOTE 2024 causing issues with repeats
+## Must be mistake in import/source fields, because the spring and fall 2024 appear to have same data - at least in the spp and dbh sheets
+understory_meta_df_2 <- dbhclass_repeat_df %>%
+  #filter(Year %in% c('2022', '2023', '2025')) %>%
+  mutate(Number.of.Seedlings = na_if(Number.of.Seedlings, 0), # 0 would interfere with calculation of mean abundance that goes into BA, TPA calcs
+         DBH.Class = case_when(is.na(DBH.Class) ~ 'unknown_dbh',
+                               DBH.Class == '0-1' ~ 'zero_to_one', 
+                               .default = DBH.Class),
+         ) %>% 
+  pivot_wider(names_from = DBH.Class, values_from = Number.of.Seedlings) %>%
+  left_join(ftd_mon_site_data_df, by = c('ParentGlobalID' = 'GlobalID', 'Year')) %>%
+  left_join(tree_attribute_df, by = c('Seedling.Species' = 'TreeSpAbb')) %>%
+  
+  group_by(Site.Name, Year, #ParentGlobalID, CreationDate, # I don't think we want ParentGlobalID, as I think this is the plot level, not site level
+           TreeSpFull, CropOther, PlantedNot,
+           Seedling.Species) %>%
+  summarise(TPA_0_1 = (100/mean(n(), na.rm = T)) * sum(zero_to_one, na.rm = T),
+            TPA_1_3 = (100/mean(n(), na.rm = T)) * sum(one_to_three, na.rm = T),
+            TPA_3_5 = (100/mean(n(), na.rm = T)) * sum(three_to_five, na.rm = T),
+            TPA_unk = (100/mean(n(), na.rm = T)) * sum(unknown_dbh, na.rm = T)) %>%
+  #mutate(TPAAll = sum(TPA_0_1, TPA_1_3, TPA_3_5, TPA_unk)) %>%
+  pivot_longer(cols = TPA_0_1:TPA_unk, names_to = 'DBHClass', values_to = 'TPA') %>%
+  mutate(TPA = na_if(TPA, 0))
+  
+  
+
+
+# Application -------------------------------------------------------------
+
+
+
+library(shiny)
+
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+
+
+  tags$head(
+    tags$style(HTML("
+      #wrapped_site_summary td {
+        white-space: normal !important;
+        word-break: break-word !important;
+      }
+    ")#,
+      #         HTML(".well { width: fit-content; }")
+               )
+  ),
+    
+    # Application title
+    titlePanel('Resilient Forests Data Dashboard'),
+    
+    tabsetPanel(id = 'nav_tabs',
+                tabPanel('Overview',
+
+                          # Sidebar with a slider input for number of bins 
+                          sidebarLayout(
+                              sidebarPanel(
+                                selectInput('year', 'Year', 
+                                            choices = unique(spp_meta_df$Year) # May need to modify the source of this
+                                ),
+                                ),
+                      
+                              # Show a plot of the generated distribution
+                              mainPanel(
+                                fluidRow(
+                                  h3('Overstory'),
+                                  plotOutput('overstory_summary', height = 'auto'),
+                                  h3('Understory'),
+                                  plotOutput('understory_summary', height = 'auto')
+                                  ),
+                              )
+                          ) 
+                ),
+                tabPanel('Diversity',
+                         sidebarLayout(
+                           sidebarPanel(
+                             selectInput('year_diversity', 'Year', 
+                                         choices = unique(spp_meta_df$Year) # May need to modify the source of this
+                             ),
+                             selectInput('div_metric', 'Diversity Metric', 
+                                         choices = list('Richness (# of Species)' = 'SpeciesNum', 
+                                                        'Evenness' = 'Pielou', 
+                                                        'Shannon Diversity Index (H\')' = 'H') # May need to modify the source of this
+                             ),
+                           ),
+
+                           # Show a plot of the generated distribution
+                           mainPanel(
+                             #h3('Overstory'),
+                             #h4('Diversity (Shannon-Weiner'),
+                             #plotOutput('overstory_diversity'),
+                             #h4('Richness (# of Species)'),
+                             #plotOutput('overstory_richness'),
+                             #h4('Evenness'),
+                             #plotOutput('overstory_evenness'),
+                             
+                             #h3('Understory'),
+                             #h4('Diversity (Shannon-Weiner'),
+                             #plotOutput('understory_diversity'),
+                             #h4('Richness (# of Species)'),
+                             #plotOutput('understory_richness'),
+                             #h4('Evenness'),
+                             #plotOutput('understory_evenness')
+                             fluidRow(
+                               h3(
+                                 textOutput('div_metric_head')
+                               ),
+                               h4('Overstory'),
+                               plotOutput('overstory_diversity', height = 'auto'),
+                               h4('Understory'),
+                               plotOutput('understory_diversity', height = 'auto')
+                             )
+
+                           )
+                         )
+                         ),
+                tabPanel('Site-Level Data',
+                        
+                         sidebarLayout(
+                           sidebarPanel(
+                             selectInput('site', 'Site Name', 
+                                         choices = unique(spp_meta_df$Site.Name)
+                             ),
+                             # put a frame of site level data here
+                             h4('Site Notes'),
+                             selectInput('site_year', 'Year', 
+                                         choices = NULL # unique(spp_meta_df$Year)
+                             ),
+                             div(id = 'wrap_site_summary',
+                                 tableOutput('site_summary_table'), 
+                                       style = 'font-size: 80%;'),
+                             width = 5
+                           ),
+                           # Show a plot of the generated distribution
+                           mainPanel(
+                             h4('Overstory Basal Area'),
+                             plotOutput("overstory_plot"),
+                             h4('Understory Plot Seedling Density'),
+                             plotOutput("understory_plot"),
+                             h4('Understory Plot Seedling Density'),
+                             plotOutput("understory_class_plot"),
+                             width = 7
+                           )
+                         )
+                )
+                
+    )
+)
+
+# Define server logic required to draw a histogram
+server <- function(input, output, session) {
+
+  #TODO: add option to sort by name or value
+  output$overstory_summary <- renderPlot({
+    # Stack bar plot all sites, with groups for aspen, oak, non-planted sp
+    spp_meta_df %>%
+      filter(Year == input$year,
+             !is.na(Site.Name)
+      ) %>%
+      group_by(Site.Name) %>%
+      mutate(SiteBA = sum(BA, na.rm = T)) %>% # This is just to help for sorting plot
+      ggplot() +
+      geom_col(aes(x = reorder(Site.Name, SiteBA), y = BA, fill = Tree.Species), 
+               #color = 'black'
+      ) +
+      coord_flip() +
+      labs(y = 'Basal Area', x = 'Site', fill = 'Tree Species') +
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            plot.background = element_rect(fill = "transparent", colour = NA),
+            #panel.background = element_rect(fill = "transparent", colour = NA)
+      )
+  },
+  height = function() {
+    nrow(
+      filter(.data = spp_meta_df, Year == input$year,
+             !is.na(Site.Name)
+      )
+    ) * 1 + 400
+  }
+  )
+  
+  output$understory_summary <- renderPlot({
+    understory_meta_df %>%
+      filter(Year == input$year,
+             !is.na(Site.Name)
+      ) %>%
+      group_by(Site.Name) %>%
+      mutate(SiteTPA = sum(TPAAll, na.rm = T)) %>% # This is just to help for sorting plot
+      ggplot() +
+      geom_col(aes(x = reorder(Site.Name, SiteTPA), y = TPAAll, fill = Seedling.Species), 
+               #color = 'black'
+      ) +
+      coord_flip() +
+      labs(y = 'Trees per Acre', x = 'Site', fill = 'Seedling Species') +
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            plot.background = element_rect(fill = "transparent", colour = NA),
+            #panel.background = element_rect(fill = "transparent", colour = NA)
+      )
+  },
+  height = function() { # from when this was ggplot instead of plotly
+    nrow(
+      filter(.data = understory_meta_df, Year == input$year,
+             !is.na(Site.Name)
+      )
+    ) * 1 + 400
+  }
+  )
+
+# Diversity tab -----------------------------------------------------------
+
+
+#  output$overstory_diversity <- renderPlot({
+#    over_diversity_df %>%
+#      filter(Year == input$year_diversity) %>%  ### Need to remember we have multiple years together, but want to plot single
+#    
+#      ggplot() +
+#      geom_col(aes(x = reorder(Site.Name, H), y = H), 
+#               fill = 'forestgreen',
+#               color = 'black'
+#               ) +
+#      coord_flip() +
+#      labs(y = 'Shannon Diversity Index (H\')', x = 'Site') +
+#      theme_bw() +
+#      theme(panel.grid.minor.x = element_blank(),
+#            plot.background = element_rect(fill = "transparent", colour = NA),
+#            #panel.background = element_rect(fill = "transparent", colour = NA)
+#      )
+#  })
+
+#  output$understory_diversity <- renderPlot({
+#    under_diversity_df %>%
+#      filter(Year == input$year_diversity) %>%
+#      
+#      ggplot() +
+#      geom_col(aes(x = reorder(Site.Name, H), y = H), 
+#               fill = 'forestgreen',
+#               color = 'black'
+#      ) +
+#      coord_flip() +
+#      labs(y = 'Shannon Diversity Index (H\')', x = 'Site') +
+#      theme_bw() +
+#      theme(panel.grid.minor.x = element_blank(),
+#            plot.background = element_rect(fill = "transparent", colour = NA),
+#            #panel.background = element_rect(fill = "transparent", colour = NA)
+#      )
+#  })
+#
+#  output$overstory_richness <- renderPlot({
+#    over_diversity_df %>%
+#      filter(Year == input$year_diversity) %>%  ### Need to remember we have multiple years together, but want to plot single
+#      
+#      ggplot() +
+#      geom_col(aes(x = reorder(Site.Name, SpeciesNum), y = SpeciesNum), 
+#               fill = 'forestgreen',
+#               color = 'black'
+#      ) +
+#      coord_flip() +
+#      labs(y = "Species Ricness (# of Species)", x = 'Site') +
+#      theme_bw() +
+#      theme(panel.grid.minor.x = element_blank(),
+#            plot.background = element_rect(fill = "transparent", colour = NA),
+#            #panel.background = element_rect(fill = "transparent", colour = NA)
+#      )
+#  })
+#  
+#  output$understory_richness <- renderPlot({
+#    under_diversity_df %>%
+#      filter(Year == input$year_diversity) %>%  ### Need to remember we have multiple years together, but want to plot single
+#      
+#      ggplot() +
+#      geom_col(aes(x = reorder(Site.Name, SpeciesNum), y = SpeciesNum), 
+#               fill = 'forestgreen',
+#               color = 'black'
+#      ) +
+#      coord_flip() +
+#      labs(y = "Species Ricness (# of Species)", x = 'Site') +
+#      theme_bw() +
+#      theme(panel.grid.minor.x = element_blank(),
+#            plot.background = element_rect(fill = "transparent", colour = NA),
+#            #panel.background = element_rect(fill = "transparent", colour = NA)
+#      )
+#  })
+#  
+#  output$overstory_evenness <- renderPlot({
+#    over_diversity_df %>%
+#      filter(Year == input$year_diversity) %>%  ### Need to remember we have multiple years together, but want to plot single
+#      
+#      ggplot() +
+#      geom_col(aes(x = reorder(Site.Name, Pielou), y = Pielou), 
+#               fill = 'forestgreen',
+#               color = 'black'
+#      ) +
+#      coord_flip() +
+#      labs(y = "Pielou's Evenness", x = 'Site') +
+#      theme_bw() +
+#      theme(panel.grid.minor.x = element_blank(),
+#            plot.background = element_rect(fill = "transparent", colour = NA),
+#            #panel.background = element_rect(fill = "transparent", colour = NA)
+#      )
+#  })
+#  
+#  output$understory_evenness <- renderPlot({
+#    over_diversity_df %>%
+#      filter(Year == input$year_diversity) %>%  ### Need to remember we have multiple years together, but want to plot single
+#      
+#      ggplot() +
+#      geom_col(aes(x = reorder(Site.Name, Pielou), y = Pielou), 
+#               fill = 'forestgreen',
+#               color = 'black'
+#      ) +
+#      coord_flip() +
+#      labs(y = "Pielou's Evenness", x = 'Site') +
+#      theme_bw() +
+#      theme(panel.grid.minor.x = element_blank(),
+#            plot.background = element_rect(fill = "transparent", colour = NA),
+#            #panel.background = element_rect(fill = "transparent", colour = NA)
+#      )
+#  })
+  
+  #####
+  #####
+  output$div_metric_head <- renderText({ # need to create a function for mapping back the content of list item to its name
+    #TODO: make a variable to store the list so we don't have to keep repeating it
+    list_labs <- names(list('Richness (# of Species)' = 'SpeciesNum', 
+                            'Evenness' = 'Pielou', 
+                            'Shannon Diversity Index (H\')' = 'H'))
+    heading <- list_labs[list('Richness (# of Species)' = 'SpeciesNum', 
+                              'Evenness' = 'Pielou', 
+                              'Shannon Diversity Index (H\')' = 'H') == input$div_metric]
+    return(heading)
+    })
+  
+  output$overstory_diversity <- renderPlot({
+    over_diversity_df %>%
+      filter(Year == input$year_diversity) %>%  ### Need to remember we have multiple years together, but want to plot single
+      
+      ggplot() +
+      geom_col(aes(x = reorder(Site.Name, .data[[input$div_metric]]), y = .data[[input$div_metric]]), 
+               fill = 'forestgreen',
+               color = 'black'
+      ) +
+      coord_flip() +
+      labs(y = input$div_metric, x = 'Site') +
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            plot.background = element_rect(fill = "transparent", colour = NA),
+            #panel.background = element_rect(fill = "transparent", colour = NA)
+      )
+  },
+  height = function() {
+    nrow(
+      filter(.data = over_diversity_df, Year == input$year,
+             !is.na(Site.Name)
+      )
+    ) * 2 + 400
+  })
+  
+  output$understory_diversity <- renderPlot({
+    under_diversity_df %>%
+      filter(Year == input$year_diversity) %>%
+      
+      ggplot() +
+      geom_col(aes(x = reorder(Site.Name, .data[[input$div_metric]]), y = .data[[input$div_metric]]), 
+               fill = 'forestgreen',
+               color = 'black'
+      ) +
+      coord_flip() +
+      labs(y = input$div_metric, x = 'Site') +
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            plot.background = element_rect(fill = "transparent", colour = NA),
+            #panel.background = element_rect(fill = "transparent", colour = NA)
+      )
+  },
+  height = function() {
+    nrow(
+      filter(.data = under_diversity_df, Year == input$year,
+             !is.na(Site.Name)
+      )
+    ) * 2 + 400
+  })
+  
+  #####
+  #####
+
+
+# Site tab --------------------------------------------------------------
+
+
+  
+  observeEvent(input$site, {
+    filtered_years <- site_summary_df %>%
+      filter(Site.Name == input$site) %>%
+      pull(Year) %>%
+      unique()
+    
+    updateSelectInput(
+      session = session,
+      inputId = 'site_year',
+      choices = filtered_years
+    )
+  })
+  # TODO: need to make sure we are properly summarizing across plots (on back end)
+  # TODO: transform release year into date format (on back end)
+  output$site_summary_table <- renderTable({site_summary_df %>%
+      filter(Site.Name == input$site,
+             Year == input$site_year) %>%
+      mutate(across(everything(), ~ as.character(.x))) %>%
+      pivot_longer(cols = -Year, names_to = 'Field') %>%
+      ungroup() %>%
+      select(-c(Year)) #%>%
+      #rename(Site = Site.Name,
+      #      `# Plots` = nPlots,
+      #       `Protected sp. stocking` = stocking_protspp,
+      #       `Action needs` = action_needs,
+      #       `Release year` = release_year,
+      #       `Stocking performance` = stock_perf)
+    
+  }, width = '100%', bordered = T # Force table to use available width
+  )
+  
+  output$overstory_plot <- renderPlot({
+    
+    spp_meta_df %>%
+      filter(Site.Name == input$site) %>%
+      #mutate(BasalArea = Number.of.trees * 10) %>%
+      group_by(Tree.Species) %>%
+      #mutate(BasalArea = max(BasalArea)) %>%
+      ggplot() +
+      geom_point(aes(x = Tree.Species, y = BA, color = Year), size = 5, alpha = 0.6) +
+      labs(x = 'Tree Species', y = 'Basal Area') +
+      scale_x_discrete(limits = unique(spp_meta_df$Tree.Species)) + # force same axis regardless of site (which have variable number of species)
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            plot.background = element_rect(fill = "transparent", colour = NA),
+            #panel.background = element_rect(fill = "transparent", colour = NA)
+      )
+    
+    
+    
+    
+  })
+  
+  output$understory_plot <- renderPlot({
+    
+    understory_meta_df %>%
+      filter(Site.Name == input$site) %>%
+      #mutate(BasalArea = Number.of.Seedlings * 10) %>%
+      group_by(Seedling.Species) %>%
+      #mutate(BasalArea = max(BasalArea)) %>%
+      ggplot() +
+      #geom_point(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), size = 5, alpha = 0.6) +
+      #geom_line(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), linewidth = 2, alpha = 0.6) +
+      #labs(x = 'Year', y = 'Trees per Acre') +
+      geom_point(aes(x = Seedling.Species, y = TPAAll, color = Year), size = 5, alpha = 0.6) +
+      labs(x = 'Seedling Species', y = 'Basal Area') +
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            plot.background = element_rect(fill = "transparent", colour = NA),
+            #panel.background = element_rect(fill = "transparent", colour = NA)
+      ) #+
+      #facet_grid(Seedling.Species ~ .)
+    
+    
+  })
+  
+  ##############
+  #### Testing out using shapes to code by size and having checkboxes to select size classes
+  output$understory_class_plot <- renderPlot({
+    
+    understory_meta_df_2 %>%
+      filter(Site.Name == input$site) %>%
+      #mutate(BasalArea = Number.of.Seedlings * 10) %>%
+      group_by(Seedling.Species) %>%
+      #mutate(BasalArea = max(BasalArea)) %>%
+      ggplot() +
+      geom_point(aes(x = Seedling.Species, y = TPA, color = Year, shape = DBHClass), size = 5, alpha = 0.6) +
+      #geom_line(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), linewidth = 2, alpha = 0.6) +
+      labs(x = 'Seedling Species', y = 'Trees per Acre') +
+      theme_bw() +
+      theme(panel.grid.minor.x = element_blank(),
+            plot.background = element_rect(fill = "transparent", colour = NA),
+            #panel.background = element_rect(fill = "transparent", colour = NA)
+      )
+    
+    
+  })
+
+  
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
