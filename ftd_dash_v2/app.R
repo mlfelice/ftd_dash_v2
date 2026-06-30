@@ -47,11 +47,15 @@
 
 # Packages ----------------------------------------------------------------
 
+library(rlang) # not sure if needed
+library(vctrs) # not sure if needed
+
+
 library(dplyr)
-#library(tidyr)
+library(tidyr)
 #library(stringr)
 library(ggplot2)
-library(plotly)
+#library(plotly)
 
 auto_size_plt <- function(df, px, min = 400){
   nrow(df) * px + min
