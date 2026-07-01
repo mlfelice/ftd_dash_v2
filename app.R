@@ -10,6 +10,7 @@
 
 # TODO: Add TPA by size class and sp (maybe have dropdown to select split by year vs size class?)
 # TODO: Add check boxes for selecting size classes
+# Relative diversity to mean of whole porfolio (maybe same for TPA and BA?)
 
 # Overstory summary plot
 ## 'overstory_summary'
@@ -476,7 +477,11 @@ server <- function(input, output, session) {
   output$site_summary_table <- renderTable({site_summary_df %>%
       filter(Site.Name == input$site,
              Year == input$site_year) %>%
-      mutate(across(everything(), ~ as.character(.x))) %>%
+      mutate(release_year = format(as.Date(as.numeric(release_year), origin = '1899-12-30'), format = '%Y'), # This should probably go outside of server
+             mean_grass_density_score = round(mean_grass_density_score, 2),
+             mean_shrub_density_score = round(mean_shrub_density_score, 2),
+             across(everything(), ~ as.character(.x))
+             ) %>%
       pivot_longer(cols = -Year, names_to = 'Field') %>%
       ungroup() %>%
       select(-c(Year)) #%>%
