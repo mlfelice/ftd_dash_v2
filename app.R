@@ -87,7 +87,7 @@ understory_meta_df_2 <- dbhclass_repeat_df %>%
             TPA_1_3 = (100/mean(n(), na.rm = T)) * sum(one_to_three, na.rm = T),
             TPA_3_5 = (100/mean(n(), na.rm = T)) * sum(three_to_five, na.rm = T),
             TPA_unk = (100/mean(n(), na.rm = T)) * sum(unknown_dbh, na.rm = T)) %>%
-  #mutate(TPAAll = sum(TPA_0_1, TPA_1_3, TPA_3_5, TPA_unk)) %>%
+  mutate(TPAAll = sum(TPA_0_1, TPA_1_3, TPA_3_5, TPA_unk)) %>%
   pivot_longer(cols = TPA_0_1:TPA_unk, names_to = 'DBHClass', values_to = 'TPA') %>%
   mutate(TPA = na_if(TPA, 0))
   
@@ -250,7 +250,7 @@ server <- function(input, output, session) {
   )
   
   output$understory_summary <- renderPlot({
-    understory_meta_df %>%
+    understory_meta_df_2 %>%
       filter(Year == input$year,
              !is.na(Site.Name)
       ) %>%
@@ -518,7 +518,7 @@ server <- function(input, output, session) {
   
   output$understory_plot <- renderPlot({
     
-    understory_meta_df %>%
+    understory_meta_df_2 %>%
       filter(Site.Name == input$site) %>%
       #mutate(BasalArea = Number.of.Seedlings * 10) %>%
       group_by(Seedling.Species) %>%
