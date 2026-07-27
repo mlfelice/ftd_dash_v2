@@ -125,7 +125,7 @@ ui <- fluidPage(
                           sidebarLayout(
                               sidebarPanel(
                                 selectInput('year', 'Year', 
-                                            choices = unique(spp_meta_df$Year) # May need to modify the source of this
+                                            choices = sort(unique(spp_meta_df$Year)) # May need to modify the source of this
                                 ),
                                 ),
                       
@@ -144,7 +144,7 @@ ui <- fluidPage(
                          sidebarLayout(
                            sidebarPanel(
                              selectInput('year_diversity', 'Year', 
-                                         choices = unique(spp_meta_df$Year) # May need to modify the source of this
+                                         choices = sort(unique(spp_meta_df$Year)) # May need to modify the source of this
                              ),
                              selectInput('div_metric', 'Diversity Metric', 
                                          choices = list('Richness (# of Species)' = 'SpeciesNum', 
@@ -502,8 +502,8 @@ server <- function(input, output, session) {
       group_by(Tree.Species) %>%
       #mutate(BasalArea = max(BasalArea)) %>%
       ggplot() +
-      geom_point(aes(x = Tree.Species, y = BA, color = Year), size = 5, alpha = 0.6) +
-      labs(x = 'Tree Species', y = 'Basal Area') +
+      geom_point(aes(x = Tree.Species, y = BA, color = as.factor(Year)), size = 5, alpha = 0.6) +
+      labs(x = 'Tree Species', y = 'Basal Area', color = 'Year') +
       scale_x_discrete(limits = unique(spp_meta_df$Tree.Species)) + # force same axis regardless of site (which have variable number of species)
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
@@ -527,8 +527,8 @@ server <- function(input, output, session) {
       #geom_point(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), size = 5, alpha = 0.6) +
       #geom_line(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), linewidth = 2, alpha = 0.6) +
       #labs(x = 'Year', y = 'Trees per Acre') +
-      geom_point(aes(x = Seedling.Species, y = TPAAll, color = Year), size = 5, alpha = 0.6) +
-      labs(x = 'Seedling Species', y = 'Trees per Acre') +
+      geom_point(aes(x = Seedling.Species, y = TPAAll, color = as.factor(Year)), size = 5, alpha = 0.6) +
+      labs(x = 'Seedling Species', y = 'Trees per Acre', color = 'Year') +
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
             plot.background = element_rect(fill = "transparent", colour = NA),
@@ -549,9 +549,9 @@ server <- function(input, output, session) {
       group_by(Seedling.Species) %>%
       #mutate(BasalArea = max(BasalArea)) %>%
       ggplot() +
-      geom_point(aes(x = Seedling.Species, y = TPA, color = Year, shape = DBHClass), size = 5, alpha = 0.6) +
+      geom_point(aes(x = Seedling.Species, y = TPA, color = as.factor(Year), shape = DBHClass), size = 5, alpha = 0.6) +
       #geom_line(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), linewidth = 2, alpha = 0.6) +
-      labs(x = 'Seedling Species', y = 'Trees per Acre') +
+      labs(x = 'Seedling Species', y = 'Trees per Acre', color = 'Year') +
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
             plot.background = element_rect(fill = "transparent", colour = NA),
