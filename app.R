@@ -188,7 +188,7 @@ ui <- fluidPage(
                          sidebarLayout(
                            sidebarPanel(
                              selectInput('site', 'Site Name', 
-                                         choices = unique(spp_meta_df$Site.Name)
+                                         choices = sort(unique(ftd_mon_site_data_df$Site.Name)) # unique(spp_meta_df$Site.Name)
                              ),
                              # put a frame of site level data here
                              h4('Site Notes'),
