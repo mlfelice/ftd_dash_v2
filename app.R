@@ -7,7 +7,6 @@
 #    https://shiny.posit.co/
 #
 
-
 # TODO: Add TPA by size class and sp (maybe have dropdown to select split by year vs size class?)
 # TODO: Add check boxes for selecting size classes
 # Relative diversity to mean of whole porfolio (maybe same for TPA and BA?)
@@ -529,7 +528,7 @@ server <- function(input, output, session) {
       #geom_line(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), linewidth = 2, alpha = 0.6) +
       #labs(x = 'Year', y = 'Trees per Acre') +
       geom_point(aes(x = Seedling.Species, y = TPAAll, color = Year), size = 5, alpha = 0.6) +
-      labs(x = 'Seedling Species', y = 'Basal Area') +
+      labs(x = 'Seedling Species', y = 'Trees per Acre') +
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
             plot.background = element_rect(fill = "transparent", colour = NA),
