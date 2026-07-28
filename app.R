@@ -83,11 +83,11 @@ understory_meta_df_2 <- dbhclass_repeat_df %>%
   group_by(Site.Name, Year, #ParentGlobalID, CreationDate, # I don't think we want ParentGlobalID, as I think this is the plot level, not site level
            TreeSpFull, CropOther, PlantedNot,
            Seedling.Species) %>%
-  summarise(TPA_0_1 = (100/mean(n(), na.rm = T)) * sum(zero_to_one, na.rm = T),
-            TPA_1_3 = (100/mean(n(), na.rm = T)) * sum(one_to_three, na.rm = T),
-            TPA_3_5 = (100/mean(n(), na.rm = T)) * sum(three_to_five, na.rm = T),
-            TPA_unk = (100/mean(n(), na.rm = T)) * sum(unknown_dbh, na.rm = T)) %>%
-  mutate(TPAAll = sum(TPA_0_1, TPA_1_3, TPA_3_5, TPA_unk)) %>%
+  summarise(TPA_0_1 = (100/mean(nPlots, na.rm = T)) * sum(zero_to_one, na.rm = T),
+            TPA_1_3 = (100/mean(nPlots, na.rm = T)) * sum(one_to_three, na.rm = T),
+            TPA_3_5 = (100/mean(nPlots, na.rm = T)) * sum(three_to_five, na.rm = T),
+            TPA_unk = (100/mean(nPlots, na.rm = T)) * sum(unknown_dbh, na.rm = T)) %>%
+  mutate(TPAAll = sum(TPA_0_1, TPA_1_3, TPA_3_5, TPA_unk)) %>%  # THink we need to rethink how we get the TPAAll number so we don't have separate cols for each
   pivot_longer(cols = TPA_0_1:TPA_unk, names_to = 'DBHClass', values_to = 'TPA') %>%
   mutate(TPA = na_if(TPA, 0))
   
