@@ -219,6 +219,7 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
 
+  # TODO: Try to sort the legend in a way that the color values look a little more continuous
   #TODO: add option to sort by name or value
   output$overstory_summary <- renderPlot({
     # Stack bar plot all sites, with groups for aspen, oak, non-planted sp
@@ -233,6 +234,7 @@ server <- function(input, output, session) {
                #color = 'black'
       ) +
       coord_flip() +
+      scale_fill_manual(values = conifer_hardwood_pal) +
       labs(y = 'Basal Area', x = 'Site', fill = 'Tree Species') +
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
@@ -261,6 +263,7 @@ server <- function(input, output, session) {
                #color = 'black'
       ) +
       coord_flip() +
+      scale_fill_manual(values = conifer_hardwood_pal) +
       labs(y = 'Trees per Acre', x = 'Site', fill = 'Seedling Species') +
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
@@ -502,8 +505,9 @@ server <- function(input, output, session) {
       group_by(Tree.Species) %>%
       #mutate(BasalArea = max(BasalArea)) %>%
       ggplot() +
-      geom_point(aes(x = Tree.Species, y = BA, color = as.factor(Year)), size = 5, alpha = 0.6) +
-      labs(x = 'Tree Species', y = 'Basal Area', color = 'Year') +
+      geom_point(aes(x = Tree.Species, y = BA, color = Tree.Species, shape = as.factor(Year)), size = 5, alpha = 0.6) +
+      scale_color_manual(values = conifer_hardwood_pal) +
+      labs(x = 'Tree Species', y = 'Basal Area', color = 'Tree Species', shape = 'Year') +
       scale_x_discrete(limits = unique(spp_meta_df$Tree.Species)) + # force same axis regardless of site (which have variable number of species)
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
@@ -527,8 +531,9 @@ server <- function(input, output, session) {
       #geom_point(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), size = 5, alpha = 0.6) +
       #geom_line(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), linewidth = 2, alpha = 0.6) +
       #labs(x = 'Year', y = 'Trees per Acre') +
-      geom_point(aes(x = Seedling.Species, y = TPAAll, color = as.factor(Year)), size = 5, alpha = 0.6) +
-      labs(x = 'Seedling Species', y = 'Trees per Acre', color = 'Year') +
+      geom_point(aes(x = Seedling.Species, y = TPAAll, color = Seedling.Species, shape = as.factor(Year)), size = 5, alpha = 0.6) +
+      scale_color_manual(values = conifer_hardwood_pal) +
+      labs(x = 'Seedling Species', y = 'Trees per Acre', color = 'Seedling Species', shape = 'Year') +
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
             plot.background = element_rect(fill = "transparent", colour = NA),
