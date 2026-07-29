@@ -44,6 +44,8 @@
 ## input$plot
 ##
 
+# TODO: Can't totally figure out how to get both static number o fx axis labels and ordering by BA/TPA. I think we might have to maybe do something where we insert all species for all groups even if no counts, then do reorder within aes()
+
 
 # Packages ----------------------------------------------------------------
 
@@ -75,6 +77,7 @@ understory_meta_df_2 <- dbhclass_repeat_df %>%
          DBH.Class = case_when(is.na(DBH.Class) ~ 'unknown_dbh',
                                DBH.Class == '0-1' ~ 'zero_to_one', 
                                .default = DBH.Class),
+         Seedling.Species = factor(Seedling.Species, levels = levels(tree_attribute_df$TreeSpAbb)) # want to keep levels for ordering of legends, need to convert to factor 1st. Easiest to borrow levels from the tree attribute df, as they must match
          ) %>% 
   pivot_wider(names_from = DBH.Class, values_from = Number.of.Seedlings) %>%
   left_join(ftd_mon_site_data_df, by = c('ParentGlobalID' = 'GlobalID', 'Year')) %>%
@@ -89,8 +92,11 @@ understory_meta_df_2 <- dbhclass_repeat_df %>%
             TPA_unk = (100/mean(nPlots, na.rm = T)) * sum(unknown_dbh, na.rm = T)) %>%
   mutate(TPAAll = sum(TPA_0_1, TPA_1_3, TPA_3_5, TPA_unk)) %>%  # THink we need to rethink how we get the TPAAll number so we don't have separate cols for each
   pivot_longer(cols = TPA_0_1:TPA_unk, names_to = 'DBHClass', values_to = 'TPA') %>%
-  mutate(TPA = na_if(TPA, 0))
-  
+  mutate(TPA = na_if(TPA, 0),
+         as.factor(Seedling.Species))
+
+
+
   
 
 
@@ -505,10 +511,10 @@ server <- function(input, output, session) {
       group_by(Tree.Species) %>%
       #mutate(BasalArea = max(BasalArea)) %>%
       ggplot() +
-      geom_point(aes(x = Tree.Species, y = BA, color = Tree.Species, shape = as.factor(Year)), size = 5, alpha = 0.6) +
+      geom_point(aes(x = reorder(Tree.Species, -BA), y = BA, color = Tree.Species, shape = as.factor(Year)), size = 5, alpha = 0.6) +
       scale_color_manual(values = conifer_hardwood_pal) +
       labs(x = 'Tree Species', y = 'Basal Area', color = 'Tree Species', shape = 'Year') +
-      scale_x_discrete(limits = unique(spp_meta_df$Tree.Species)) + # force same axis regardless of site (which have variable number of species)
+      #scale_x_discrete(limits = unique(spp_meta_df$Tree.Species)) + # force same axis regardless of site (which have variable number of species)
       theme_bw() +
       theme(panel.grid.minor.x = element_blank(),
             plot.background = element_rect(fill = "transparent", colour = NA),
@@ -531,7 +537,7 @@ server <- function(input, output, session) {
       #geom_point(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), size = 5, alpha = 0.6) +
       #geom_line(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), linewidth = 2, alpha = 0.6) +
       #labs(x = 'Year', y = 'Trees per Acre') +
-      geom_point(aes(x = Seedling.Species, y = TPAAll, color = Seedling.Species, shape = as.factor(Year)), size = 5, alpha = 0.6) +
+      geom_point(aes(x = reorder(Seedling.Species, -TPAAll), y = TPAAll, color = Seedling.Species, shape = as.factor(Year)), size = 5, alpha = 0.6) +
       scale_color_manual(values = conifer_hardwood_pal) +
       labs(x = 'Seedling Species', y = 'Trees per Acre', color = 'Seedling Species', shape = 'Year') +
       theme_bw() +
