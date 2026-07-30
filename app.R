@@ -68,6 +68,12 @@ auto_size_plt <- function(df, px, min = 400){
 
 load('data/ftd_dash_data.RData')
 
+sum_na_not_zero <- function(x) {
+  if(all(is.na(x))) {
+    NA
+  }
+  else(sum(x, na.rm = T))
+}
 
 # NOTE 2024 causing issues with repeats
 ## Must be mistake in import/source fields, because the spring and fall 2024 appear to have same data - at least in the spp and dbh sheets
@@ -86,11 +92,11 @@ understory_meta_df_2 <- dbhclass_repeat_df %>%
   group_by(Site.Name, Year, #ParentGlobalID, CreationDate, # I don't think we want ParentGlobalID, as I think this is the plot level, not site level
            TreeSpFull, CropOther, PlantedNot,
            Seedling.Species) %>%
-  summarise(TPA_0_1 = (100/mean(nPlots, na.rm = T)) * sum(zero_to_one, na.rm = T),
-            TPA_1_3 = (100/mean(nPlots, na.rm = T)) * sum(one_to_three, na.rm = T),
-            TPA_3_5 = (100/mean(nPlots, na.rm = T)) * sum(three_to_five, na.rm = T),
-            TPA_unk = (100/mean(nPlots, na.rm = T)) * sum(unknown_dbh, na.rm = T)) %>%
-  mutate(TPAAll = sum(TPA_0_1, TPA_1_3, TPA_3_5, TPA_unk)) %>%  # THink we need to rethink how we get the TPAAll number so we don't have separate cols for each
+  summarise(TPA_0_1 = (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(zero_to_one),
+            TPA_1_3 = (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(one_to_three),
+            TPA_3_5 = (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(three_to_five),
+            TPA_unk = (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(unknown_dbh)) %>%
+  mutate(TPAAll = sum_na_not_zero(c(TPA_0_1, TPA_1_3, TPA_3_5, TPA_unk))) %>%  # THink we need to rethink how we get the TPAAll number so we don't have separate cols for each
   pivot_longer(cols = TPA_0_1:TPA_unk, names_to = 'DBHClass', values_to = 'TPA') %>%
   mutate(TPA = na_if(TPA, 0),
          as.factor(Seedling.Species))
@@ -260,10 +266,11 @@ server <- function(input, output, session) {
   output$understory_summary <- renderPlot({
     understory_meta_df_2 %>%
       filter(Year == input$year,
-             !is.na(Site.Name)
+             !is.na(Site.Name),
+             !is.na(TPAAll)
       ) %>%
       group_by(Site.Name) %>%
-      mutate(SiteTPA = sum(TPAAll, na.rm = T)) %>% # This is just to help for sorting plot
+      mutate(SiteTPA = sum_na_not_zero(TPAAll)) %>% # This is just to help for sorting plot
       ggplot() +
       geom_col(aes(x = reorder(Site.Name, SiteTPA), y = TPAAll, fill = Seedling.Species), 
                #color = 'black'
