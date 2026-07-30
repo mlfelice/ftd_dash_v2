@@ -46,6 +46,9 @@
 
 # TODO: Can't totally figure out how to get both static number o fx axis labels and ordering by BA/TPA. I think we might have to maybe do something where we insert all species for all groups even if no counts, then do reorder within aes()
 
+# To render the website after updating app:
+# shinylive::export(appdir = 'C:/Users/mark.felice/Documents/ftd_dash_v2/', destdir = 'docs')
+
 
 # Packages ----------------------------------------------------------------
 
@@ -86,10 +89,10 @@ understory_meta_df_2 <- dbhclass_repeat_df %>%
          Seedling.Species = factor(Seedling.Species, levels = levels(tree_attribute_df$TreeSpAbb)) # want to keep levels for ordering of legends, need to convert to factor 1st. Easiest to borrow levels from the tree attribute df, as they must match
          ) %>% 
   pivot_wider(names_from = DBH.Class, values_from = Number.of.Seedlings) %>%
-  left_join(ftd_mon_site_data_df, by = c('ParentGlobalID' = 'GlobalID', 'Year')) %>%
+  left_join(ftd_mon_site_data_df, by = c('ParentGlobalID' = 'GlobalID', 'Year', 'Season')) %>%
   left_join(tree_attribute_df, by = c('Seedling.Species' = 'TreeSpAbb')) %>%
   
-  group_by(Site.Name, Year, #ParentGlobalID, CreationDate, # I don't think we want ParentGlobalID, as I think this is the plot level, not site level
+  group_by(Site.Name, Year, Season, #ParentGlobalID, CreationDate, # I don't think we want ParentGlobalID, as I think this is the plot level, not site level
            TreeSpFull, CropOther, PlantedNot,
            Seedling.Species) %>%
   summarise(TPA_0_1 = (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(zero_to_one),
@@ -99,7 +102,19 @@ understory_meta_df_2 <- dbhclass_repeat_df %>%
   mutate(TPAAll = sum_na_not_zero(c(TPA_0_1, TPA_1_3, TPA_3_5, TPA_unk))) %>%  # THink we need to rethink how we get the TPAAll number so we don't have separate cols for each
   pivot_longer(cols = TPA_0_1:TPA_unk, names_to = 'DBHClass', values_to = 'TPA') %>%
   mutate(TPA = na_if(TPA, 0),
-         as.factor(Seedling.Species))
+         as.factor(Seedling.Species)) %>%
+  ungroup() %>%
+  group_by(Site.Name, Year) %>%
+  mutate(Site.Name = if (n_distinct(Season) > 1)  # append the season if there are more than one
+  {
+    paste0(Site.Name,  ' - ', Season)
+  }
+  else if (n_distinct(Season) == 1) 
+  {
+    Site.Name
+  }
+  )
+
 
 
 
