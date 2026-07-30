@@ -218,8 +218,8 @@ ui <- fluidPage(
                              plotOutput("overstory_plot"),
                              h4('Understory Plot Seedling Density'),
                              plotOutput("understory_plot"),
-                             h4('Understory Plot Seedling Density'),
-                             plotOutput("understory_class_plot"),
+                             #h4('Understory Plot Seedling Density'),
+                             #plotOutput("understory_class_plot"),
                              width = 7
                            )
                          )
@@ -559,25 +559,25 @@ server <- function(input, output, session) {
   
   ##############
   #### Testing out using shapes to code by size and having checkboxes to select size classes
-  output$understory_class_plot <- renderPlot({
-    
-    understory_meta_df_2 %>%
-      filter(Site.Name == input$site) %>%
-      #mutate(BasalArea = Number.of.Seedlings * 10) %>%
-      group_by(Seedling.Species) %>%
-      #mutate(BasalArea = max(BasalArea)) %>%
-      ggplot() +
-      geom_point(aes(x = Seedling.Species, y = TPA, color = as.factor(Year), shape = DBHClass), size = 5, alpha = 0.6) +
-      #geom_line(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), linewidth = 2, alpha = 0.6) +
-      labs(x = 'Seedling Species', y = 'Trees per Acre', color = 'Year') +
-      theme_bw() +
-      theme(panel.grid.minor.x = element_blank(),
-            plot.background = element_rect(fill = "transparent", colour = NA),
-            #panel.background = element_rect(fill = "transparent", colour = NA)
-      )
-    
-    
-  })
+#  output$understory_class_plot <- renderPlot({
+#    
+#    understory_meta_df_2 %>%
+#      filter(Site.Name == input$site) %>%
+#      #mutate(BasalArea = Number.of.Seedlings * 10) %>%
+#      group_by(Seedling.Species) %>%
+#      #mutate(BasalArea = max(BasalArea)) %>%
+#      ggplot() +
+#      geom_point(aes(x = Seedling.Species, y = TPA, color = as.factor(Year), shape = DBHClass), size = 5, alpha = 0.6) +
+#      #geom_line(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), linewidth = 2, alpha = 0.6) +
+#      labs(x = 'Seedling Species', y = 'Trees per Acre', color = 'Year') +
+#      theme_bw() +
+#      theme(panel.grid.minor.x = element_blank(),
+#            plot.background = element_rect(fill = "transparent", colour = NA),
+#            #panel.background = element_rect(fill = "transparent", colour = NA)
+#      )
+#    
+#    
+#  })
 
   
 }
