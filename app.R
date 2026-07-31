@@ -235,7 +235,7 @@ ui <- fluidPage(
                            # Show a plot of the generated distribution
                            mainPanel(
                              h4('Overstory Basal Area'),
-                             plotOutput("overstory_plot"),
+                             plotlyOutput("overstory_plot"),
                              h4('Understory Plot Seedling Density'),
                              plotlyOutput("understory_plot"),
                              #h4('Understory Plot Seedling Density'),
@@ -530,28 +530,81 @@ server <- function(input, output, session) {
   }, width = '100%', bordered = T # Force table to use available width
   )
   
-  output$overstory_plot <- renderPlot({
-    
+### Old ggplot2 version ###  
+#  output$overstory_plot <- renderPlot({
+#    
+#    spp_meta_df %>%
+#      filter(Site.Name == input$site) %>%
+#      #mutate(BasalArea = Number.of.trees * 10) %>%
+#      group_by(Tree.Species) %>%
+#      #mutate(BasalArea = max(BasalArea)) %>%
+#      ggplot() +
+#      geom_point(aes(x = reorder(Tree.Species, -BA), y = BA, color = Tree.Species, shape = as.factor(Year)), size = 5, alpha = 0.6) +
+#      scale_color_manual(values = conifer_hardwood_pal) +
+#      labs(x = 'Tree Species', y = 'Basal Area', color = 'Tree Species', shape = 'Year') +
+#      #scale_x_discrete(limits = unique(spp_meta_df$Tree.Species)) + # force same axis regardless of site (which have variable number of species)
+#      theme_bw() +
+#      theme(panel.grid.minor.x = element_blank(),
+#            plot.background = element_rect(fill = "transparent", colour = NA),
+#            #panel.background = element_rect(fill = "transparent", colour = NA)
+#      )
+#  })
+
+  output$overstory_plot <- renderPlotly({
     spp_meta_df %>%
       filter(Site.Name == input$site) %>%
       #mutate(BasalArea = Number.of.trees * 10) %>%
       group_by(Tree.Species) %>%
       #mutate(BasalArea = max(BasalArea)) %>%
-      ggplot() +
-      geom_point(aes(x = reorder(Tree.Species, -BA), y = BA, color = Tree.Species, shape = as.factor(Year)), size = 5, alpha = 0.6) +
-      scale_color_manual(values = conifer_hardwood_pal) +
-      labs(x = 'Tree Species', y = 'Basal Area', color = 'Tree Species', shape = 'Year') +
-      #scale_x_discrete(limits = unique(spp_meta_df$Tree.Species)) + # force same axis regardless of site (which have variable number of species)
-      theme_bw() +
-      theme(panel.grid.minor.x = element_blank(),
-            plot.background = element_rect(fill = "transparent", colour = NA),
-            #panel.background = element_rect(fill = "transparent", colour = NA)
+      
+      plot_ly(
+        data = ., 
+        x = ~reorder(Tree.Species, -BA), 
+        y = ~BA, 
+        color = ~Tree.Species,
+        shape = ~as.factor(Year),
+        type = 'scatter', 
+        mode = 'markers', 
+        marker = list(
+          size = 12,
+          line = list(
+            color = 'black',
+            width = 0.5
+          )
+        ),
+        colors = conifer_hardwood_pal,
+        hovertemplate = paste0('Species: %{x}<br>', 
+                               'BA: %{y}ft<sup>2</sup> acre<sup>-1</sup>',
+                               '<extra></extra>'
+          
+        )
+      ) %>%
+      
+      layout(
+        title = 'Basal Area',
+        legend = list(
+          title = list(
+            text = 'Tree Species'
+          )
+        ),
+        plot_bgcolor = NULL,
+        xaxis = list( 
+          zerolinecolor = 'black', 
+          zerolinewidth = 1, 
+          gridcolor = '#e5ecf6',
+          title = 'Tree Species'), 
+        yaxis = list( 
+          showline = T,
+          zerolinecolor = 'black', 
+          zerolinewidth = 1, 
+          gridcolor = '#e5ecf6',
+          title = 'Basal Area (ft<sup>2</sup> acre<sup>-1</sup>')
       )
-    
-    
-    
-    
   })
+    
+    
+    
+
   
 ### Old ggplot2 version ###
 #  output$understory_plot <- renderPlot({
