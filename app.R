@@ -167,7 +167,7 @@ ui <- fluidPage(
                                   h3('Overstory'),
                                   plotlyOutput('overstory_summary', height = 'auto'),
                                   h3('Understory'),
-                                  plotOutput('understory_summary', height = 'auto')
+                                  plotlyOutput('understory_summary', height = 'auto')
                                   ),
                               )
                           ) 
@@ -311,7 +311,26 @@ server <- function(input, output, session) {
       ) %>%
       
       layout(
-        barmode = 'stack'
+        barmode = 'stack',
+        title = 'Tree Abundance', 
+        legend = list(
+          title = list(
+            text ='Tree Species'
+          )
+        ),
+        plot_bgcolor = NULL, 
+        xaxis = list( 
+          zerolinecolor = 'black', 
+          zerolinewidth = 1, 
+          gridcolor = '#e5ecf6',
+          title = 'Basal Area: (ft<sup>2</sup> acre<sup>-1</sup>)'
+        ), 
+        yaxis = list( 
+          showline = T,
+          zerolinecolor = 'black', 
+          zerolinewidth = 1, 
+          gridcolor = '#e5ecf6',
+          title = 'Site Name')
       )
   })
   
@@ -344,6 +363,54 @@ server <- function(input, output, session) {
     ) * 1 + 400
   }
   )
+  
+  output$understory_summary <- renderPlotly({
+    understory_meta_df_2 %>%
+      filter(Year == input$year,
+             !is.na(Site.Name),
+             !is.na(TPAAll)
+      ) %>%
+      group_by(Site.Name) %>%
+      mutate(SiteTPA = sum_na_not_zero(TPAAll)) %>% # This is just to help for sorting plot
+      plot_ly(
+        data = .,
+        y = ~reorder(Site.Name, SiteTPA),
+        x = ~TPAAll,
+        type = 'bar',
+        color = ~Seedling.Species,
+        colors = conifer_hardwood_pal,
+        text = ~TreeSpFull,
+        customdata = ~SiteTPA,
+        hovertemplate = paste0('%{y}<br>', 
+                               '%{text} TPA: %{x}<br>',
+                               'All Species TPA: %{customdata}<br>',
+                               '<extra></extra>'
+        )
+      ) %>%
+      
+      layout(
+        barmode = 'stack',
+        title = 'Seedling Abundance', 
+        legend = list(
+          title = list(
+            text ='Seedling Species'
+            )
+        ),
+        plot_bgcolor = NULL, 
+        xaxis = list( 
+          zerolinecolor = 'black', 
+          zerolinewidth = 1, 
+          gridcolor = '#e5ecf6',
+          title = 'Trees per Acre'
+          ), 
+        yaxis = list( 
+          showline = T,
+          zerolinecolor = 'black', 
+          zerolinewidth = 1, 
+          gridcolor = '#e5ecf6',
+          title = 'Site Name')
+      )
+  })
 
 # Diversity tab -----------------------------------------------------------
 
