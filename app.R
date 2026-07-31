@@ -60,7 +60,7 @@ library(dplyr)
 library(tidyr)
 #library(stringr)
 library(ggplot2)
-#library(plotly)
+library(plotly)
 
 auto_size_plt <- function(df, px, min = 400){
   nrow(df) * px + min
@@ -99,7 +99,12 @@ understory_meta_df_2 <- dbhclass_repeat_df %>%
             TPA_1_3 = (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(one_to_three),
             TPA_3_5 = (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(three_to_five),
             TPA_unk = (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(unknown_dbh)) %>%
-  mutate(TPAAll = sum_na_not_zero(c(TPA_0_1, TPA_1_3, TPA_3_5, TPA_unk))) %>%  # THink we need to rethink how we get the TPAAll number so we don't have separate cols for each
+  mutate(TPAAll = sum_na_not_zero(c(TPA_0_1, TPA_1_3, TPA_3_5, TPA_unk)), # THink we need to rethink how we get the TPAAll number so we don't have separate cols for each
+         TextBox = paste0(       'Species: ', Seedling.Species, '<br>',
+                                 'Total TPA: ', TPAAll, '<br>',
+                                 'TPA 0-1: ', TPA_0_1, '<br>',
+                                 'TPA 1-3: ', TPA_1_3, '<br>',
+                                 'TPA 3-5: ', TPA_3_5, '<br>')) %>%  
   pivot_longer(cols = TPA_0_1:TPA_unk, names_to = 'DBHClass', values_to = 'TPA') %>%
   mutate(TPA = na_if(TPA, 0),
          as.factor(Seedling.Species)) %>%
@@ -232,7 +237,7 @@ ui <- fluidPage(
                              h4('Overstory Basal Area'),
                              plotOutput("overstory_plot"),
                              h4('Understory Plot Seedling Density'),
-                             plotOutput("understory_plot"),
+                             plotlyOutput("understory_plot"),
                              #h4('Understory Plot Seedling Density'),
                              #plotOutput("understory_class_plot"),
                              width = 7
@@ -548,29 +553,76 @@ server <- function(input, output, session) {
     
   })
   
-  output$understory_plot <- renderPlot({
-    
+### Old ggplot2 version ###
+#  output$understory_plot <- renderPlot({
+#    
+#    understory_meta_df_2 %>%
+#      filter(Site.Name == input$site) %>%
+#      #mutate(BasalArea = Number.of.Seedlings * 10) %>%
+#      group_by(Seedling.Species) %>%
+#      #mutate(BasalArea = max(BasalArea)) %>%
+#      ggplot() +
+#      #geom_point(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), size = 5, alpha = 0.6) +
+#      #geom_line(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), linewidth = 2, alpha = 0.6) +
+#      #labs(x = 'Year', y = 'Trees per Acre') +
+#      geom_point(aes(x = reorder(Seedling.Species, -TPAAll), y = TPAAll, color = Seedling.Species, shape = as.factor(Year)), size = 5, alpha = 0.6) +
+#      scale_color_manual(values = conifer_hardwood_pal) +
+#      labs(x = 'Seedling Species', y = 'Trees per Acre', color = 'Seedling Species', shape = 'Year') +
+#      theme_bw() +
+#      theme(panel.grid.minor.x = element_blank(),
+#            plot.background = element_rect(fill = "transparent", colour = NA),
+#            #panel.background = element_rect(fill = "transparent", colour = NA)
+#      ) #+
+#      #facet_grid(Seedling.Species ~ .)
+#    
+#    
+#  })
+  output$understory_plot <- renderPlotly({
     understory_meta_df_2 %>%
       filter(Site.Name == input$site) %>%
-      #mutate(BasalArea = Number.of.Seedlings * 10) %>%
       group_by(Seedling.Species) %>%
-      #mutate(BasalArea = max(BasalArea)) %>%
-      ggplot() +
-      #geom_point(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), size = 5, alpha = 0.6) +
-      #geom_line(aes(x = as.numeric (Year), y = TPAAll, color = Seedling.Species), linewidth = 2, alpha = 0.6) +
-      #labs(x = 'Year', y = 'Trees per Acre') +
-      geom_point(aes(x = reorder(Seedling.Species, -TPAAll), y = TPAAll, color = Seedling.Species, shape = as.factor(Year)), size = 5, alpha = 0.6) +
-      scale_color_manual(values = conifer_hardwood_pal) +
-      labs(x = 'Seedling Species', y = 'Trees per Acre', color = 'Seedling Species', shape = 'Year') +
-      theme_bw() +
-      theme(panel.grid.minor.x = element_blank(),
-            plot.background = element_rect(fill = "transparent", colour = NA),
-            #panel.background = element_rect(fill = "transparent", colour = NA)
-      ) #+
-      #facet_grid(Seedling.Species ~ .)
-    
-    
+      
+      plot_ly(
+        data = ., 
+        x = ~reorder(Seedling.Species, -TPAAll), 
+        y = ~TPAAll, 
+        color = ~Seedling.Species,
+        type = 'scatter', 
+        mode = 'markers', 
+        marker = list(
+          size = 12,
+          line = list(
+            color = 'black',
+            width = 0.5
+          )
+        ),
+        colors = conifer_hardwood_pal,
+        text = ~I(TextBox),
+        hovertemplate = '%{text}'
+      ) %>%
+      
+      layout(
+        title = 'Seedling Abundance',
+        legend = list(
+          title = list(
+            text = 'Seedling Species'
+          )
+        ),
+        plot_bgcolor = NULL,
+        xaxis = list( 
+          zerolinecolor = 'black', 
+          zerolinewidth = 1, 
+          gridcolor = '#e5ecf6',
+          title = 'Seedling Species'), 
+        yaxis = list( 
+          showline = T,
+          zerolinecolor = 'black', 
+          zerolinewidth = 1, 
+          gridcolor = '#e5ecf6',
+          title = 'Trees per Acre')
+      )
   })
+
   
   ##############
   #### Testing out using shapes to code by size and having checkboxes to select size classes
