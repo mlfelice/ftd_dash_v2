@@ -165,7 +165,7 @@ ui <- fluidPage(
                               mainPanel(
                                 fluidRow(
                                   h3('Overstory'),
-                                  plotOutput('overstory_summary', height = 'auto'),
+                                  plotlyOutput('overstory_summary', height = 'auto'),
                                   h3('Understory'),
                                   plotOutput('understory_summary', height = 'auto')
                                   ),
@@ -253,35 +253,67 @@ server <- function(input, output, session) {
 
   # TODO: Try to sort the legend in a way that the color values look a little more continuous
   #TODO: add option to sort by name or value
-  output$overstory_summary <- renderPlot({
-    # Stack bar plot all sites, with groups for aspen, oak, non-planted sp
+
+### Old ggplot2 version of overstory summary ###  
+#  output$overstory_summary <- renderPlot({
+#    # Stack bar plot all sites, with groups for aspen, oak, non-planted sp
+#    spp_meta_df %>%
+#      filter(Year == input$year,
+#             !is.na(Site.Name)
+#      ) %>%
+#      group_by(Site.Name) %>%
+#      mutate(SiteBA = sum(BA, na.rm = T)) %>% # This is just to help for sorting plot
+#      ggplot() +
+#      geom_col(aes(x = reorder(Site.Name, SiteBA), y = BA, fill = Tree.Species), 
+#               #color = 'black'
+#      ) +
+#      coord_flip() +
+#      scale_fill_manual(values = conifer_hardwood_pal) +
+#      labs(y = 'Basal Area', x = 'Site', fill = 'Tree Species') +
+#      theme_bw() +
+#      theme(panel.grid.minor.x = element_blank(),
+#            plot.background = element_rect(fill = "transparent", colour = NA),
+#            #panel.background = element_rect(fill = "transparent", colour = NA)
+#      )
+#  },
+#  height = function() {
+#    nrow(
+#      filter(.data = spp_meta_df, Year == input$year,
+#             !is.na(Site.Name)
+#      )
+#    ) * 1 + 400
+#  }
+#  )
+  
+  output$overstory_summary <- renderPlotly({
     spp_meta_df %>%
       filter(Year == input$year,
              !is.na(Site.Name)
       ) %>%
       group_by(Site.Name) %>%
-      mutate(SiteBA = sum(BA, na.rm = T)) %>% # This is just to help for sorting plot
-      ggplot() +
-      geom_col(aes(x = reorder(Site.Name, SiteBA), y = BA, fill = Tree.Species), 
-               #color = 'black'
-      ) +
-      coord_flip() +
-      scale_fill_manual(values = conifer_hardwood_pal) +
-      labs(y = 'Basal Area', x = 'Site', fill = 'Tree Species') +
-      theme_bw() +
-      theme(panel.grid.minor.x = element_blank(),
-            plot.background = element_rect(fill = "transparent", colour = NA),
-            #panel.background = element_rect(fill = "transparent", colour = NA)
+      mutate(SiteBA = round(sum(BA, na.rm = T), 2),
+             BA = round(BA, 2)
+      ) %>% # This is just to help for sorting plot
+      plot_ly(
+        data = .,
+        y = ~reorder(Site.Name, SiteBA),
+        x = ~BA,
+        type = 'bar',
+        color = ~Tree.Species,
+        colors = conifer_hardwood_pal,
+        text = ~TreeSpFull,
+        customdata = ~SiteBA,
+        hovertemplate = paste0('%{y}<br>', 
+                               '%{text} BA: %{x}ft<sup>2</sup> acre<sup>-1</sup><br>',
+                               'All Species BA: %{customdata}ft<sup>2</sup> acre<sup>-1</sup>',
+                               '<extra></extra>'
+        )
+      ) %>%
+      
+      layout(
+        barmode = 'stack'
       )
-  },
-  height = function() {
-    nrow(
-      filter(.data = spp_meta_df, Year == input$year,
-             !is.na(Site.Name)
-      )
-    ) * 1 + 400
-  }
-  )
+  })
   
   output$understory_summary <- renderPlot({
     understory_meta_df_2 %>%
