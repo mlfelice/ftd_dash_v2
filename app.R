@@ -562,7 +562,7 @@ server <- function(input, output, session) {
         x = ~reorder(Tree.Species, -BA), 
         y = ~BA, 
         color = ~Tree.Species,
-        shape = ~as.factor(Year),
+        symbol = ~as.factor(Year),
         type = 'scatter', 
         mode = 'markers', 
         marker = list(
@@ -640,6 +640,7 @@ server <- function(input, output, session) {
         x = ~reorder(Seedling.Species, -TPAAll), 
         y = ~TPAAll, 
         color = ~Seedling.Species,
+        symbol = ~as.factor(Year),
         type = 'scatter', 
         mode = 'markers', 
         marker = list(
