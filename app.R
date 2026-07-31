@@ -286,6 +286,16 @@ server <- function(input, output, session) {
 #  )
   
   output$overstory_summary <- renderPlotly({
+    
+    plot_height <- 
+      nrow(
+        filter(.data = understory_meta_df_2, 
+               Year == input$year,
+               !is.na(Site.Name)
+        )
+      ) * 0.2 + 400
+    
+    
     spp_meta_df %>%
       filter(Year == input$year,
              !is.na(Site.Name)
@@ -307,7 +317,9 @@ server <- function(input, output, session) {
                                '%{text} BA: %{x}ft<sup>2</sup> acre<sup>-1</sup><br>',
                                'All Species BA: %{customdata}ft<sup>2</sup> acre<sup>-1</sup>',
                                '<extra></extra>'
-        )
+        ),
+        height = plot_height
+        
       ) %>%
       
       layout(
@@ -334,37 +346,47 @@ server <- function(input, output, session) {
       )
   })
   
-  output$understory_summary <- renderPlot({
-    understory_meta_df_2 %>%
-      filter(Year == input$year,
-             !is.na(Site.Name),
-             !is.na(TPAAll)
-      ) %>%
-      group_by(Site.Name) %>%
-      mutate(SiteTPA = sum_na_not_zero(TPAAll)) %>% # This is just to help for sorting plot
-      ggplot() +
-      geom_col(aes(x = reorder(Site.Name, SiteTPA), y = TPAAll, fill = Seedling.Species), 
-               #color = 'black'
-      ) +
-      coord_flip() +
-      scale_fill_manual(values = conifer_hardwood_pal) +
-      labs(y = 'Trees per Acre', x = 'Site', fill = 'Seedling Species') +
-      theme_bw() +
-      theme(panel.grid.minor.x = element_blank(),
-            plot.background = element_rect(fill = "transparent", colour = NA),
-            #panel.background = element_rect(fill = "transparent", colour = NA)
-      )
-  },
-  height = function() { # from when this was ggplot instead of plotly
-    nrow(
-      filter(.data = understory_meta_df, Year == input$year,
-             !is.na(Site.Name)
-      )
-    ) * 1 + 400
-  }
-  )
+### Old ggplot2 version of understory summary plot ###
+#  output$understory_summary <- renderPlot({
+#    understory_meta_df_2 %>%
+#      filter(Year == input$year,
+#             !is.na(Site.Name),
+#             !is.na(TPAAll)
+#      ) %>%
+#      group_by(Site.Name) %>%
+#      mutate(SiteTPA = sum_na_not_zero(TPAAll)) %>% # This is just to help for sorting plot
+#      ggplot() +
+#      geom_col(aes(x = reorder(Site.Name, SiteTPA), y = TPAAll, fill = Seedling.Species), 
+#               #color = 'black'
+#      ) +
+#      coord_flip() +
+#      scale_fill_manual(values = conifer_hardwood_pal) +
+#      labs(y = 'Trees per Acre', x = 'Site', fill = 'Seedling Species') +
+#      theme_bw() +
+#      theme(panel.grid.minor.x = element_blank(),
+#            plot.background = element_rect(fill = "transparent", colour = NA),
+#            #panel.background = element_rect(fill = "transparent", colour = NA)
+#      )
+#  },
+#  height = function() { # from when this was ggplot instead of plotly
+#    nrow(
+#      filter(.data = understory_meta_df, Year == input$year,
+#             !is.na(Site.Name)
+#      )
+#    ) * 1 + 400
+#  }
+#  )
   
   output$understory_summary <- renderPlotly({
+    
+    plot_height <- 
+      nrow(
+        filter(.data = understory_meta_df_2, 
+               Year == input$year,
+               !is.na(Site.Name)
+        )
+      ) * 0.2 + 400
+    
     understory_meta_df_2 %>%
       filter(Year == input$year,
              !is.na(Site.Name),
@@ -385,7 +407,8 @@ server <- function(input, output, session) {
                                '%{text} TPA: %{x}<br>',
                                'All Species TPA: %{customdata}<br>',
                                '<extra></extra>'
-        )
+        ),
+        height = plot_height
       ) %>%
       
       layout(
