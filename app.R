@@ -95,16 +95,16 @@ understory_meta_df_2 <- dbhclass_repeat_df %>%
   group_by(Site.Name, Year, Season, #ParentGlobalID, CreationDate, # I don't think we want ParentGlobalID, as I think this is the plot level, not site level
            TreeSpFull, CropOther, PlantedNot,
            Seedling.Species) %>%
-  summarise(TPA_0_1 = (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(zero_to_one),
-            TPA_1_3 = (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(one_to_three),
-            TPA_3_5 = (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(three_to_five),
-            TPA_unk = (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(unknown_dbh)) %>%
+  summarise(TPA_0_1 = round( (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(zero_to_one), 2),
+            TPA_1_3 = round( (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(one_to_three), 2),
+            TPA_3_5 = round( (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(three_to_five), 2),
+            TPA_unk = round( (100/mean(nPlots, na.rm = T)) * sum_na_not_zero(unknown_dbh), 2)) %>%
   mutate(TPAAll = sum_na_not_zero(c(TPA_0_1, TPA_1_3, TPA_3_5, TPA_unk)), # THink we need to rethink how we get the TPAAll number so we don't have separate cols for each
          TextBox = paste0(       'Species: ', Seedling.Species, '<br>',
-                                 'Total TPA: ', TPAAll, '<br>',
-                                 'TPA 0-1: ', TPA_0_1, '<br>',
-                                 'TPA 1-3: ', TPA_1_3, '<br>',
-                                 'TPA 3-5: ', TPA_3_5, '<br>')) %>%  
+                                 'Total TPA: ', TPAAll, ' trees acre <sup>-1</sup>', '<br>',
+                                 'TPA 0-1: ', TPA_0_1, ' trees acre <sup>-1</sup>', '<br>',
+                                 'TPA 1-3: ', TPA_1_3, ' trees acre <sup>-1</sup>', '<br>',
+                                 'TPA 3-5: ', TPA_3_5, ' trees acre <sup>-1</sup>', '<br>')) %>%  
   pivot_longer(cols = TPA_0_1:TPA_unk, names_to = 'DBHClass', values_to = 'TPA') %>%
   mutate(TPA = na_if(TPA, 0),
          as.factor(Seedling.Species)) %>%
@@ -683,6 +683,7 @@ server <- function(input, output, session) {
       filter(Site.Name == input$site) %>%
       #mutate(BasalArea = Number.of.trees * 10) %>%
       group_by(Tree.Species) %>%
+      mutate(BA = round(BA, 2)) %>%
       #mutate(BasalArea = max(BasalArea)) %>%
       
       plot_ly(
