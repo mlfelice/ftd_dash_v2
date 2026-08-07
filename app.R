@@ -220,7 +220,11 @@ ui <- fluidPage(
                          sidebarLayout(
                            sidebarPanel(
                              selectInput('site', 'Site Name', 
-                                         choices = sort(unique(ftd_mon_site_data_df$Site.Name)) # unique(spp_meta_df$Site.Name)
+                                         # We initially used the ftd_mon_data_df, which is preferable, except there is no easy way to sort out the browse and riparian surveys
+                                         # Instead, we get names from the understory df, assuming that all sites should have at least one seedling (even if no overstory)
+                                         # Would ultimately like to figure out a way to use the ftd_mon_data_df
+                                         # TODO: Find a more elegant way to sort out the no-data rows
+                                         choices = sort(unique(pull(understory_meta_df_2[which(!is.na(understory_meta_df_2$TPAAll)), 'Site.Name']))) # sort(unique(ftd_mon_site_data_df$Site.Name)) # unique(spp_meta_df$Site.Name)
                              ),
                              # put a frame of site level data here
                              h4('Site Notes'),
